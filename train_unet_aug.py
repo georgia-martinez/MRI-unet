@@ -35,7 +35,7 @@ session = tf.compat.v1.InteractiveSession(config=tf.compat.v1.ConfigProto(gpu_op
 ###################################
 
 ###################################
-#Important hyperparameters
+# Important hyperparameters
 
 image_height = 256
 image_width = 256
@@ -68,10 +68,6 @@ with strategy.scope():
     model = unet.get_unet(input_img, num_channels)
     model.compile(optimizer=optimizer, loss=FCN_metrics.dice_coef_loss, metrics=[FCN_metrics.dice_coef])
     model.summary()
-
-# model.compile(optimizer=optimizer, loss=FCN_metrics.dice_coef_loss, metrics=[FCN_metrics.dice_coef])
-# model.summary()
-# parallel_unet.compile(optimizer=Adam(), loss=FCN_metrics.dice_coef_loss, metrics=[FCN_metrics.dice_coef])
 
 print("Built the network \n")
 ###################################
@@ -185,7 +181,6 @@ for X_batch, y_batch in train_generator:
 print("Running the U-Net")
 
 results = model.fit_generator(train_generator, steps_per_epoch = len(X_train)//batch_size, epochs=epochs, validation_data=(X_val, y_val), validation_steps=(len(X_val)*2)//batch_size,callbacks=callbacks) # steps per epoch for training and validation were original 20
-#results = parallel_unet.fit(X_train, y_train, batch_size=batch_size, epochs=epochs,validation_data=(X_val, y_val),callbacks=callbacks)
 
 print("Saving the model")
 model.save(f"models/{model_name}")
@@ -230,13 +225,3 @@ hd5f_file.create_dataset("Pred_Masks", data = preds_val)
 hd5f_file.create_dataset("Pred_Masks_T", data = preds_train)
 hd5f_file.close()
 print("Finished predicting on training and validation data. Saved predictions to HDF5 file. \n")
-
-
-###################################
-# Test the FCN on both holdout testing sets
-# testRoot = "/home/tgd15/Post-Treatment/Revised SPIE/Experiments_Revised/Datasets/Testing/"
-# HDF5pathslist = [testRoot+"ORW_Testing_Dataset_expert1.hdf5",testRoot+"ORW_Testing_Dataset_expert2.hdf5", testRoot+"ORW_Testing_Dataset_excluded_masks.hdf5",testRoot+"ORW_Testing_Dataset_VA.hdf5"]
-# out_file_names = ["ORW_Testing_Predictions_expert1.hdf5","ORW_Testing_Predictions_expert2.hdf5","ORW_Preds_Excluded_Masks.hdf5", "ORW_Preds_VA.hdf5"]
-# for ind, dataset in enumerate(HDF5pathslist):
-#     lp.load_and_predict(model_name, dataset, out_file_names[ind])
-# print("Finished predicting on all holdout testing datasets.")
