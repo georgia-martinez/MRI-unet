@@ -8,7 +8,7 @@ Created on Tue Mar 12 17:11:25 2019
 FCN Metrics
 """
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 plt.ioff()
 plt.style.use("ggplot")
