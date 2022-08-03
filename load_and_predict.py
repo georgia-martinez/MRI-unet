@@ -73,34 +73,34 @@ def load_and_predict(FCNModelPath, testingHDF5, predFileName):
     Returns nothing but saves predictions as HDF5 file
     
     """
-    loaded_model = load_model(FCNModelPath, custom_objects={'dice_coef': dice_coef,'dice_coef_loss': dice_coef_loss})
-    with h5py.File(testingHDF5, 'r') as f:
-        X_test = f['testing_Images'][()]
-        test_imag_fileanmes = f['testing_image_filenames'][()]
+    loaded_model = load_model(FCNModelPath, custom_objects={"dice_coef": dice_coef,"dice_coef_loss": dice_coef_loss})
+    with h5py.File(testingHDF5, "r") as f:
+        X_test = f["testing_Images"][()]
+        test_imag_fileanmes = f["testing_image_filenames"][()]
     
     uh_preds = loaded_model.predict(X_test, verbose=1)
     uh_preds_np = np.array(uh_preds)
     print("Shape of UH predictions: " + str(uh_preds_np.shape))
 
-    hd5f_file = h5py.File(datetime.datetime.today().strftime('%Y-%m-%d')+' ' + predFileName, mode='w')
-    hd5f_file.create_dataset('UH_Predictions', data = uh_preds_np)
-    hd5f_file.create_dataset('Prediction_Names', data = test_imag_fileanmes)
+    hd5f_file = h5py.File(datetime.datetime.today().strftime("%Y-%m-%d")+" " + predFileName, mode="w")
+    hd5f_file.create_dataset("UH_Predictions", data = uh_preds_np)
+    hd5f_file.create_dataset("Prediction_Names", data = test_imag_fileanmes)
     hd5f_file.close()
     
 
 #excluded_subgroups = ["coronal","dark lumen", "low quality"]
 #model_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Outer Rectal Wall U-Net/Analysis/2021-06-06/Training_Rectal_Wall_Unet.hdf5"
 #for i in excluded_subgroups:
-#       hdf5_path = '/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Excluded Patients/Datasets/ORW_Testing_Dataset_excluded_' + i + '.hdf5'
+#       hdf5_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Excluded Patients/Datasets/ORW_Testing_Dataset_excluded_" + i + ".hdf5"
 #       pred_name = "ORW_Preds_Excluded_" + i + ".hdf5"
 #       load_and_predict(model_path, hdf5_path, pred_name) 
-#model_path = '/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Outer Rectal Wall U-Net/Analysis/2021-04-22/Training_Rectal_Wall_Unet.hdf5'
-#hdf5_path = '/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Excluded Patients/Datasets/ORW_Testing_Dataset_excluded_masks.hdf5'
-#pred_name = 'ORW_Preds_Excluded_Masks.hdf5'
+#model_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Outer Rectal Wall U-Net/Analysis/2021-04-22/Training_Rectal_Wall_Unet.hdf5"
+#hdf5_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Excluded Patients/Datasets/ORW_Testing_Dataset_excluded_masks.hdf5"
+#pred_name = "ORW_Preds_Excluded_Masks.hdf5"
 #load_and_predict(model_path, hdf5_path, pred_name)  
 #
 #
-#model_path = '/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Outer Rectal Wall U-Net/Analysis/2021-04-22/Training_Rectal_Wall_Unet.hdf5'
-#hdf5_path = '/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/VA_Patients/Datasets/ORW_Testing_Dataset_VA.hdf5'
-#pred_name = 'ORW_Preds_VA.hdf5'
+#model_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Outer Rectal Wall U-Net/Analysis/2021-04-22/Training_Rectal_Wall_Unet.hdf5"
+#hdf5_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/VA_Patients/Datasets/ORW_Testing_Dataset_VA.hdf5"
+#pred_name = "ORW_Preds_VA.hdf5"
 #load_and_predict(model_path, hdf5_path, pred_name)

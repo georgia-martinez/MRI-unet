@@ -9,7 +9,7 @@ import random
 import numpy as np
 import datetime
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 plt.ioff()
 plt.style.use("ggplot")
@@ -24,9 +24,8 @@ from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.layers.pooling import MaxPooling2D, GlobalMaxPool2D
 from keras.layers.merge import Concatenate, concatenate, add
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
 from keras.losses import binary_crossentropy
-from keras.utils.training_utils import multi_gpu_model
 import h5py
 from sklearn import metrics
 import tensorflow as tf
@@ -71,26 +70,26 @@ def get_unet(input_img, num_channels, n_filters=30, dropout=0.2, batchnorm=True)
     c5 = conv2d_block(p4, n_filters=n_filters*16, kernel_size=3, batchnorm=batchnorm)
     
     # expansive path
-    u6 = Conv2DTranspose(n_filters*8, (3, 3), strides=(2, 2), padding='same') (c5)
+    u6 = Conv2DTranspose(n_filters*8, (3, 3), strides=(2, 2), padding="same") (c5)
     u6 = concatenate([u6, c4])
     u6 = Dropout(dropout)(u6)
     c6 = conv2d_block(u6, n_filters=n_filters*8, kernel_size=3, batchnorm=batchnorm)
 
-    u7 = Conv2DTranspose(n_filters*4, (3, 3), strides=(2, 2), padding='same') (c6)
+    u7 = Conv2DTranspose(n_filters*4, (3, 3), strides=(2, 2), padding="same") (c6)
     u7 = concatenate([u7, c3])
     u7 = Dropout(dropout)(u7)
     c7 = conv2d_block(u7, n_filters=n_filters*4, kernel_size=3, batchnorm=batchnorm)
 
-    u8 = Conv2DTranspose(n_filters*2, (3, 3), strides=(2, 2), padding='same') (c7)
+    u8 = Conv2DTranspose(n_filters*2, (3, 3), strides=(2, 2), padding="same") (c7)
     u8 = concatenate([u8, c2])
     u8 = Dropout(dropout)(u8)
     c8 = conv2d_block(u8, n_filters=n_filters*2, kernel_size=3, batchnorm=batchnorm)
 
-    u9 = Conv2DTranspose(n_filters*1, (3, 3), strides=(2, 2), padding='same') (c8)
+    u9 = Conv2DTranspose(n_filters*1, (3, 3), strides=(2, 2), padding="same") (c8)
     u9 = concatenate([u9, c1], axis=3)
     u9 = Dropout(dropout)(u9)
     c9 = conv2d_block(u9, n_filters=n_filters*1, kernel_size=3, batchnorm=batchnorm)
     
-    outputs = Conv2D(num_channels, (1, 1), activation='sigmoid') (c9)
+    outputs = Conv2D(num_channels, (1, 1), activation="sigmoid") (c9)
     model = Model(inputs=[input_img], outputs=[outputs])
     return model
