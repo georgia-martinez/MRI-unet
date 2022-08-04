@@ -1,14 +1,19 @@
+import os
 import load_and_predict as lp
 
-# Test the FCN on both holdout testing sets
-testRoot = "/home/tgd15/Post-Treatment/Revised SPIE/Experiments_Revised/Datasets/Testing/"
+model_name = "average_1"
+test_file = "external"
 
-HDF5pathslist = [testRoot+"ORW_Testing_Dataset_expert1.hdf5",testRoot+"ORW_Testing_Dataset_expert2.hdf5", testRoot+"ORW_Testing_Dataset_excluded_masks.hdf5",testRoot+"ORW_Testing_Dataset_VA.hdf5"]
-out_file_names = ["ORW_Testing_Predictions_expert1.hdf5","ORW_Testing_Predictions_expert2.hdf5","ORW_Preds_Excluded_Masks.hdf5", "ORW_Preds_VA.hdf5"]
+PATH = "/data/gcm49/experiment3"
 
-model_name = "AC1.h5"
-model_path = f"models/{model_name}"
+model_path = f"{PATH}/models/{model_name}.h5"
+test_path = f"{PATH}/hdf5_files/{test_file}.h5"
+out_path = f"{PATH}/predictions/{model_name}/"
 
-for ind, dataset in enumerate(HDF5pathslist):
-    lp.load_and_predict(model_name, dataset, out_file_names[ind])
-print("Finished predicting on all holdout testing datasets.")
+if not os.path.exists(out_path):
+    os.makedirs(out_path)
+    print(f"Creating new directory: {out_path}")
+
+out_path += f"{test_file}_predictions.h5"
+
+lp.load_and_predict(model_path, test_path, out_path)

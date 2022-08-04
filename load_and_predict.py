@@ -1,16 +1,12 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 12 16:07:09 2019
-
-@author: Tom
-"""
-
-from keras.models import load_model
 import keras.backend as K
-import datetime
 import numpy as np
 import h5py
+import cv2
+import os
+
+from numpy import argmax
+from keras.models import load_model
+from sklearn.metrics import roc_curve
 
 def dice_coef(y_true, y_pred, smooth = 1.0):
     """Compute Dice Similarity Coefficient (DSC)
@@ -59,6 +55,53 @@ def dice_coef_loss(y_true, y_pred):
     """
     return -dice_coef(y_true, y_pred)
 
+def best_thresh(y_true, y_score):
+    """
+    
+    """
+
+    # calculate roc curves
+    fpr, tpr, thresholds = roc_curve(y_true.flatten(), y_score.flatten())
+
+    gmeans = np.sqrt(tpr * (1-fpr))
+    ix = argmax(gmeans)
+    best_thresh = thresholds[ix]
+
+    print('Best Threshold=%f, G-Mean=%.3f' % (best_thresh, gmeans[ix]))
+
+    # # Youden's J statistic
+    # J = tpr - fpr
+    # ix = argmax(J)
+    # best_thresh = thresholds[ix]
+    # print('Best Threshold=%f' % (best_thresh))
+
+    return best_thresh
+
+def binary_masks(groundtruth, predictions):
+    """
+    
+    """
+
+    assert groundtruth.shape[0:3] == predictions.shape[0:3], "Groundtruth and prediction shapes don't match"
+
+    binary_masks = []
+
+    for i in range(groundtruth.shape[0]):
+        label = groundtruth[i, :, :].astype(int)
+
+        if not np.any(label): 
+            binary_masks.append(label)
+            continue
+
+        out_mask = predictions[i, :, :]
+
+        thresh = best_thresh(label, out_mask)
+
+        ret, mask = cv2.threshold(out_mask, thresh, 1, cv2.THRESH_BINARY)
+        binary_masks.append(mask)
+
+    return np.array(binary_masks)
+
 def load_and_predict(FCNModelPath, testingHDF5, predFileName):
     """Load FCN model and predict on a dataset
     
@@ -71,36 +114,34 @@ def load_and_predict(FCNModelPath, testingHDF5, predFileName):
     Returns
     -------
     Returns nothing but saves predictions as HDF5 file
-    
     """
+
     loaded_model = load_model(FCNModelPath, custom_objects={"dice_coef": dice_coef,"dice_coef_loss": dice_coef_loss})
+
     with h5py.File(testingHDF5, "r") as f:
-        X_test = f["testing_Images"][()]
-        test_imag_fileanmes = f["testing_image_filenames"][()]
-    
-    uh_preds = loaded_model.predict(X_test, verbose=1)
-    uh_preds_np = np.array(uh_preds)
-    print("Shape of UH predictions: " + str(uh_preds_np.shape))
+        X_test = f["raw"][()]
+        test_image_fileanmes = f["raw_names"][()]
 
-    hd5f_file = h5py.File(datetime.datetime.today().strftime("%Y-%m-%d")+" " + predFileName, mode="w")
-    hd5f_file.create_dataset("UH_Predictions", data = uh_preds_np)
-    hd5f_file.create_dataset("Prediction_Names", data = test_imag_fileanmes)
+    predictions = loaded_model.predict(X_test, verbose=1)
+    predictions = np.array(predictions)
+    
+    # Binarize the predictions
+    binary_images = []
+
+    for i in range(predictions.shape[0]):
+        image = predictions[i, :, :]
+        ret, thresh = cv2.threshold(image, .5, 1, cv2.THRESH_BINARY)
+        binary_images.append(thresh)
+
+    print("Shape of predictions: " + str(predictions.shape))
+
+    if os.path.exists(predFileName):
+        os.remove(predFileName)
+
+    hd5f_file = h5py.File(predFileName, mode="w")
+    hd5f_file.create_dataset("predictions", data=predictions)
+    hd5f_file.create_dataset("binary_predictions", data=binary_images)
+    hd5f_file.create_dataset("file_names", data=test_image_fileanmes)
     hd5f_file.close()
-    
 
-#excluded_subgroups = ["coronal","dark lumen", "low quality"]
-#model_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Outer Rectal Wall U-Net/Analysis/2021-06-06/Training_Rectal_Wall_Unet.hdf5"
-#for i in excluded_subgroups:
-#       hdf5_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Excluded Patients/Datasets/ORW_Testing_Dataset_excluded_" + i + ".hdf5"
-#       pred_name = "ORW_Preds_Excluded_" + i + ".hdf5"
-#       load_and_predict(model_path, hdf5_path, pred_name) 
-#model_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Outer Rectal Wall U-Net/Analysis/2021-04-22/Training_Rectal_Wall_Unet.hdf5"
-#hdf5_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Excluded Patients/Datasets/ORW_Testing_Dataset_excluded_masks.hdf5"
-#pred_name = "ORW_Preds_Excluded_Masks.hdf5"
-#load_and_predict(model_path, hdf5_path, pred_name)  
-#
-#
-#model_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/Outer Rectal Wall U-Net/Analysis/2021-04-22/Training_Rectal_Wall_Unet.hdf5"
-#hdf5_path = "/Volumes/GoogleDrive/My Drive/tom/Rectal Segmentation/Data-MultipleExperts/VA_Patients/Datasets/ORW_Testing_Dataset_VA.hdf5"
-#pred_name = "ORW_Preds_VA.hdf5"
-#load_and_predict(model_path, hdf5_path, pred_name)
+    print(f"Saved predictions to {predFileName}")

@@ -16,7 +16,6 @@ import keras.backend as K
 from sklearn import metrics
 import numpy as np
 
-
 def dice_coef(y_true, y_pred, smooth = 1.0):
     """Compute Dice Similarity Coefficient (DSC)
         
