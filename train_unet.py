@@ -13,14 +13,14 @@ from tensorflow.keras.optimizers import Adam
 image_height = 128
 image_width = 128
 num_channels = 1
-epochs = 5
-batch_size = 128
+epochs = 10
+batch_size = 32
 learning_rate = 3e-3
-model_name = "best_1"
+model_name = "average_1"
 
 # Paths to the trainining and validation hdf5 files
-HDF5Path_train = "/data/gcm49/experiment3/hdf5_files/best_1_train.h5"
-HDF5Path_val = "/data/gcm49/experiment3/hdf5_files/best_1_val.h5"
+HDF5Path_train = f"/data/gcm49/experiment3/hdf5_files/{model_name}_train.h5"
+HDF5Path_val = f"/data/gcm49/experiment3/hdf5_files/{model_name}_val.h5"
 
 model_out_path = "/data/gcm49/experiment3/models"
 
@@ -66,7 +66,7 @@ print(f"y_train shape: {y_train.shape}")
 # Run U-Net
 print("Running the U-Net")
 
-results = model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, validation_data=(X_val, y_val))
+model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, validation_data=(X_val, y_val))
 
 print("Saving the model")
 model.save(f"{model_out_path}/{model_name}.h5")

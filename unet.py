@@ -1,10 +1,3 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar 12 17:47:37 2019
-
-@author: Tom
-"""
 import random
 import numpy as np
 import datetime
@@ -22,7 +15,7 @@ from keras.layers import Input, BatchNormalization, Activation, Dense, Dropout, 
 from keras.layers.core import Lambda, RepeatVector, Reshape
 from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.layers.pooling import MaxPooling2D, GlobalMaxPool2D
-from keras.layers.merge import Concatenate, concatenate, add
+from keras.layers import concatenate
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.optimizers import Adam
 from keras.losses import binary_crossentropy

@@ -1,20 +1,7 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar 12 17:11:25 2019
-
-@author: Tom DeSilvio
-
-FCN Metrics
-"""
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-plt.ioff()
-plt.style.use("ggplot")
 import keras.backend as K
-from sklearn import metrics
 import numpy as np
+
+from sklearn import metrics
 
 def dice_coef(y_true, y_pred, smooth = 1.0):
     """Compute Dice Similarity Coefficient (DSC)
@@ -36,6 +23,9 @@ def dice_coef(y_true, y_pred, smooth = 1.0):
         -------
         Original source code can be found `here <https://github.com/jocicmarko/ultrasound-nerve-segmentation/blob/master/train.py>`_
         """
+
+    # y_true = K.cast_to_floatx(y_true)
+
     flat_truth = K.flatten(y_true)
     flat_prediction = K.flatten(y_pred)
     intersection = K.sum(flat_truth * flat_prediction)
