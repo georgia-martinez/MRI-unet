@@ -1,8 +1,8 @@
-import keras.backend as K
 import numpy as np
 import h5py
 import cv2
 import os
+import tensorflow as tf
 
 from keras.models import load_model
 from FCN_metrics import dice_coef, dice_coef_loss
@@ -72,4 +72,8 @@ if __name__ == "__main__":
 
     out_path += f"{test_file}_predictions.h5"
 
-    load_and_predict(model_path, test_path, out_path)
+    strategy = tf.distribute.MirroredStrategy(devices=["GPU:0", "GPU:1"])
+    print("Number of devices: {}".format(strategy.num_replicas_in_sync))
+
+    with strategy.scope():
+        load_and_predict(model_path, test_path, out_path)

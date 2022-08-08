@@ -24,7 +24,7 @@ def dice_coef(y_true, y_pred, smooth = 1.0):
         Original source code can be found `here <https://github.com/jocicmarko/ultrasound-nerve-segmentation/blob/master/train.py>`_
         """
 
-    # y_true = K.cast_to_floatx(y_true)
+    y_true = K.cast_to_floatx(y_true)
 
     flat_truth = K.flatten(y_true)
     flat_prediction = K.flatten(y_pred)
