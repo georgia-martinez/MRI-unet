@@ -1,4 +1,3 @@
-from unicodedata import name
 import numpy as np
 import tensorflow as tf
 import h5py
@@ -7,9 +6,8 @@ import unet
 import json
 
 from keras.layers import Input
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau, LambdaCallback
+from keras.callbacks import EarlyStopping, LambdaCallback
 from tensorflow.keras.optimizers import Adam
-from time import time
 
 # Important hyperparameters
 image_height = 128
@@ -19,10 +17,10 @@ epochs = 50
 batch_size = 16
 learning_rate = 3e-3
 
-model_name = "average_1"
-model_version = "v4"
+model_name = "worst_3"
+model_version = "" # (e.g. v2 or v3 or leave blank)
 
-full_model_name = model_name + model_version
+full_model_name = model_name + model_version # (e.g. average_1 or average_1v4)
 
 model_out_path = f"/data/gcm49/experiment3/models/{full_model_name}.h5" 
 
@@ -37,16 +35,10 @@ config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)
 
-strategy = tf.distribute.MirroredStrategy(devices=["GPU:0", "GPU:1"])
-print("Number of devices: {}".format(strategy.num_replicas_in_sync))
-
 optimizer = Adam(learning_rate=learning_rate)
 
-with strategy.scope():
-
-    model = unet.get_unet(input_img, num_channels)
-    model.compile(optimizer=optimizer, loss=FCN_metrics.dice_coef_loss, metrics=[FCN_metrics.dice_coef])
-    # model.summary()
+model = unet.get_unet(input_img, num_channels)
+model.compile(optimizer=optimizer, loss=FCN_metrics.dice_coef_loss, metrics=[FCN_metrics.dice_coef])
 
 print("Built the network \n")
 
@@ -73,43 +65,29 @@ y_train = np.expand_dims(y_train, 3)
 X_val = np.expand_dims(X_val, 3)
 y_val = np.expand_dims(y_val, 3)
 
-print(f"X_train shape: {X_train.shape}")
-print(f"y_train shape: {y_train.shape}")
-print(f"X_val shape: {X_val.shape}")
-print(f"y_val shape: {y_val.shape}")
+assert X_train.shape == y_train.shape
+assert X_val.shape == y_val.shape
 
-train_data = tf.data.Dataset.from_tensor_slices((X_train, y_train))
-val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val))
-
-train_data = train_data.batch(batch_size)
-val_data = val_data.batch(batch_size)
-
-# Turn off AutoShard
-options =  tf.data.Options()
-options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
-
-train_data = train_data.with_options(options)
-val_data = val_data.with_options(options)
+print(f"Training data shape: {X_train.shape}")
+print(f"Validation data shape: {X_val.shape}\n")
 
 # Set callbacks
 
 json_logs = []
 
-json_file = open(f"{model_name}{model_version}_loss_log.json", mode="wt", buffering=1)
 json_logging_callback = LambdaCallback(
     on_epoch_end=lambda epoch, 
     logs: json_logs.append({"epoch": epoch, "loss": logs["loss"], "val loss": logs["val_loss"]}),
 )
         
-reduce_lr = ReduceLROnPlateau(factor=0.2, patience=5, verbose=1)
-early_stop = EarlyStopping(monitor="loss", patience=4, mode="auto", baseline=None)
+early_stop = EarlyStopping(monitor="loss", patience=4, mode="auto", min_delta=0.01, baseline=None)
 
 callbacks = [early_stop, json_logging_callback]
 
 # Run U-Net
 print("Running the U-Net")
 
-model.fit(train_data, validation_data=val_data, batch_size=batch_size, epochs=epochs, callbacks=callbacks)
+model.fit(X_train, y_train, validation_data=(X_val, y_val), batch_size=batch_size, epochs=epochs, callbacks=callbacks)
 
 print(f"Saving the model to: {model_out_path}")
 model.save(f"{model_out_path}")
@@ -118,6 +96,8 @@ model.save(f"{model_out_path}")
 data = {}
 data["name"] = full_model_name
 data["path"] = model_out_path
+data["train path"] = HDF5Path_train
+data["val path"] = HDF5Path_val
 data["image height"] = image_height
 data["image width"] = image_width
 data["num channels"] = num_channels

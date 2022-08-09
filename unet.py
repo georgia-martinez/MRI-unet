@@ -1,27 +1,8 @@
-import random
-import numpy as np
-import datetime
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-plt.ioff()
-plt.style.use("ggplot")
-
-
-import keras.backend as K
-from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Model, load_model
-from keras.layers import Input, BatchNormalization, Activation, Dense, Dropout, UpSampling2D, Cropping2D, ZeroPadding2D
-from keras.layers.core import Lambda, RepeatVector, Reshape
+from keras.models import Model
+from keras.layers import BatchNormalization, Activation, Dropout
 from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.layers.pooling import MaxPooling2D, GlobalMaxPool2D
 from keras.layers import concatenate
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from tensorflow.keras.optimizers import Adam
-from keras.losses import binary_crossentropy
-import h5py
-from sklearn import metrics
-import tensorflow as tf
 
 ###################################
 #Define convolutional block

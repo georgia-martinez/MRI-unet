@@ -1,9 +1,11 @@
 import keras.backend as K
 import numpy as np
+import tensorflow as tf
 
 from sklearn import metrics
+from scipy.spatial.distance import directed_hausdorff
 
-def dice_coef(y_true, y_pred, smooth = 1.0):
+def dice_coef(y_true, y_pred, smooth=1.0):
     """Compute Dice Similarity Coefficient (DSC)
         
         Parameters
@@ -34,8 +36,8 @@ def dice_coef(y_true, y_pred, smooth = 1.0):
     sum_prediction = K.sum(flat_prediction)
     denominator = sum_truth + sum_prediction + smooth
     dice = numerator / denominator
-    return dice
-
+    
+    return dice # <class 'tensorflow.python.framework.ops.Tensor'>
 
 def dice_coef_loss(y_true, y_pred):
     """Dice Similarity Coefficient (DSC) loss function
@@ -54,6 +56,44 @@ def dice_coef_loss(y_true, y_pred):
     """
     return -dice_coef(y_true, y_pred)
 
+# def hausdorff(y_true, y_pred):
+
+#     haus = directed_hausdorff(y_true, y_pred)[0]
+#     haus = tf.convert_to_tensor(haus)
+
+#     print(type(haus))
+
+#     return haus
+
+def hausdorff(A, B):
+    """
+    Original code: https://github.com/danielenricocahall/Keras-Weighted-Hausdorff-Distance-Loss/blob/master/hausdorff/hausdorff.py
+
+    Computes the pairwise Euclidean distance matrix between two tensorflow matrices A & B, similiar to scikit-learn cdist.
+    For example:
+    A = [[1, 2],
+         [3, 4]]
+    B = [[1, 2],
+         [3, 4]]
+    should return:
+        [[0, 2.82],
+         [2.82, 0]]
+    :param A: m_a x n matrix
+    :param B: m_b x n matrix
+    :return: euclidean distance matrix (m_a x m_b)
+    """
+
+    # squared norms of each row in A and B
+    na = tf.reduce_sum(tf.square(A), 1)
+    nb = tf.reduce_sum(tf.square(B), 1)
+
+    # na as a row and nb as a co"lumn vectors
+    na = tf.reshape(na, [-1, 1])
+    nb = tf.reshape(nb, [1, -1])
+
+    # return pairwise euclidead difference matrix
+    D = tf.sqrt(tf.maximum(na - 2 * tf.matmul(A, B, False, True) + nb, 0.0))
+    return D
 
 def compute_dsc(preds, gt):
     """Compute average Dice Similarity Coefficient (DSC) given predictions and ground truths
