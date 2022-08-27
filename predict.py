@@ -9,9 +9,9 @@ from keras.models import load_model
 from FCN_metrics import dice_coef, dice_coef_loss
 from binarize import *
 
-def get_paths(model_name, test_file):
+def get_paths(model_name, test_file, exp_num):
 
-    PATH = "/data/gcm49/experiment3"
+    PATH = f"/data/gcm49/experiment{exp_num}"
 
     model_path = f"{PATH}/models/{model_name}.h5"
     test_path = f"{PATH}/hdf5_files/{test_file}.h5"
@@ -26,6 +26,15 @@ def get_paths(model_name, test_file):
     return model_path, test_path, out_path
 
 def internal_set_name(model_name):
+    """
+    Returns the name of the internal testing set based on the model name
+
+    average_1 --> average_1_test
+    worst_1v4 --> worst_1_test
+
+    @returns: name of the internal testing set
+    """
+
     internal_set = model_name
 
     if bool(re.search("[0-9]v[0-9]", model_name)):
@@ -35,7 +44,7 @@ def internal_set_name(model_name):
 
     return internal_set
 
-def load_and_predict(model_name, test_set_name):
+def load_and_predict(model_name, test_set_name, exp_num):
     """
     Load FCN model and predicts on a dataset. Predictions are saved to an HDF5 file.
     
@@ -44,14 +53,14 @@ def load_and_predict(model_name, test_set_name):
     @param out_path: string - HDf5 file to which predictions will be saved    
     """
 
-    model_path, test_path, out_path = get_paths(model_name, test_set_name)
+    model_path, test_path, out_path = get_paths(model_name, test_set_name, exp_num)
 
     loaded_model = load_model(model_path, custom_objects={"dice_coef": dice_coef,"dice_coef_loss": dice_coef_loss})
 
     with h5py.File(test_path, "r") as f:
         X_test = f["raw"][()]
         labels = f["labels"][()]
-        test_image_fileanmes = f["raw_names"][()]
+        test_image_fileanmes = f["slice_names"][()]
 
     predictions = loaded_model.predict(X_test, verbose=1)
     predictions = np.array(predictions)
@@ -81,11 +90,15 @@ def load_and_predict(model_name, test_set_name):
 
 # Setting up the parser
 parser = argparse.ArgumentParser(description="Predict")
+
 parser.add_argument("-m", "--model", type=str, metavar="", help="Name of the model (e.g. average_1)")
+parser.add_argument("-e", "--experiment", type=str, metavar="", help="Experiment number to access the correct folder")
+
 args = parser.parse_args()
 
 if __name__ == "__main__":
     model_name = args.model
+    exp_num = args.experiment
 
-    load_and_predict(model_name, "external")
-    load_and_predict(model_name, internal_set_name(model_name))
+    load_and_predict(model_name, "external", exp_num)
+    load_and_predict(model_name, internal_set_name(model_name), exp_num)

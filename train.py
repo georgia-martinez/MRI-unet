@@ -4,10 +4,20 @@ import h5py
 import FCN_metrics
 import unet
 import json
+import argparse
 
 from keras.layers import Input
 from keras.callbacks import EarlyStopping, LambdaCallback
 from tensorflow.keras.optimizers import Adam
+
+# Setting up the parser
+parser = argparse.ArgumentParser(description="Train")
+
+parser.add_argument("-m", "--model", type=str, metavar="", help="Name of the model (e.g. average_1)")
+parser.add_argument("-v", "--version", type=str, metavar="", nargs="?", default="", help="Version number of model (e.g. v2 or v2)")
+parser.add_argument("-e", "--experiment", type=str, metavar="", help="Experiment number to access the correct folder")
+
+args = parser.parse_args()
 
 # Important hyperparameters
 image_height = 128
@@ -17,16 +27,17 @@ epochs = 50
 batch_size = 16
 learning_rate = 3e-3
 
-model_name = "worst_3"
-model_version = "" # (e.g. v2 or v3 or leave blank)
+model_name = args.model
+model_version = args.version
+exp_num = args.experiment
 
 full_model_name = model_name + model_version # (e.g. average_1 or average_1v4)
 
-model_out_path = f"/data/gcm49/experiment3/models/{full_model_name}.h5" 
+model_out_path = f"/data/gcm49/experiment{exp_num}/models/{full_model_name}.h5" 
 
-# Paths to the trainining and validation hdf5 files
-HDF5Path_train = f"/data/gcm49/experiment3/hdf5_files/{model_name}_train.h5"
-HDF5Path_val = f"/data/gcm49/experiment3/hdf5_files/{model_name}_val.h5"
+# Paths to the training and validation hdf5 files
+HDF5Path_train = f"/data/gcm49/experiment{exp_num}/hdf5_files/{model_name}_train.h5"
+HDF5Path_val = f"/data/gcm49/experiment{exp_num}/hdf5_files/{model_name}_val.h5"
 
 # Build the network
 input_img = Input((image_width, image_height, num_channels), name="img")
@@ -106,5 +117,5 @@ data["batch size"] = batch_size
 data["learning rate"] = learning_rate
 data["logs"] = json_logs
 
-with open(f"json_logs/{full_model_name}.json", "w") as json_file:
+with open(f"json_logs/experiment{exp_num}/{full_model_name}.json", "w") as json_file:
     json.dump(data, fp=json_file, indent=4)
