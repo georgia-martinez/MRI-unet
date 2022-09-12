@@ -1,4 +1,3 @@
 __pycache__/
 unet/
-logs/
-*_loss_log_.json
+sample_augmentations.png
