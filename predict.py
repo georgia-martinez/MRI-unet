@@ -100,5 +100,13 @@ if __name__ == "__main__":
     model_name = args.model
     exp_num = args.experiment
 
+    model_num = model_name.split("_")[1]
+    nums = ["1", "2", "3"]
+
+    test_files = [f"AC_{x}" for x in nums if x != model_num]
+
     load_and_predict(model_name, "external", exp_num)
-    load_and_predict(model_name, internal_set_name(model_name), exp_num)
+    load_and_predict(model_name, test_files[0], exp_num)
+    load_and_predict(model_name, test_files[1], exp_num)
+
+    # load_and_predict(model_name, internal_set_name(model_name), exp_num)

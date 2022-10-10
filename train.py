@@ -40,10 +40,7 @@ learning_rate = 3e-3
 full_model_name = model_name + model_version # (e.g. average_1 or average_1v4)
 
 model_out_path = f"/data/gcm49/experiment{exp_num}/models/{full_model_name}.h5" 
-
-# Paths to the training hdf5 file
 HDF5Path_train = f"/data/gcm49/experiment{exp_num}/hdf5_files/{model_name}.h5"
-# HDF5Path_val = f"/data/gcm49/experiment{exp_num}/hdf5_files/{model_name}_val.h5"
 
 # Build the network
 input_img = Input((image_width, image_height, num_channels), name="img")
@@ -73,12 +70,11 @@ early_stop = EarlyStopping(monitor="loss", patience=4, mode="auto", min_delta=0.
 callbacks = [early_stop, json_logging_callback]
 
 # Get the training and validation datasets
-print("Loading the training dataset")
-
 with h5py.File(HDF5Path_train, "r") as f:
     raw = f["raw"][()]
     labels = f["labels"][()]
     names = f["slice_names"][()]
+    names = [name.decode("utf-8") for name in names]
 
 print("Creating the training, validation split...")
 X_train, y_train, X_val, y_val = train_val_split(raw, labels, names)
@@ -131,17 +127,15 @@ print("Running the U-Net")
 
 model.fit(train_generator, steps_per_epoch = len(X_train)//batch_size, validation_data=(X_val, y_val), epochs=epochs, callbacks=callbacks)
 
-# model.fit(X_train, y_train, validation_data=(X_val, y_val), batch_size=batch_size, epochs=epochs, callbacks=callbacks)
-
 print(f"Saving the model to: {model_out_path}")
-model.save(f"{model_out_path}")
+model.save(model_out_path)
 
 # Save JSON file with training info
 data = {}
 data["name"] = full_model_name
 data["path"] = model_out_path
 data["train path"] = HDF5Path_train
-data["val path"] = HDF5Path_val
+# data["val path"] = HDF5Path_val
 data["image height"] = image_height
 data["image width"] = image_width
 data["num channels"] = num_channels
@@ -150,5 +144,9 @@ data["batch size"] = batch_size
 data["learning rate"] = learning_rate
 data["logs"] = json_logs
 
-with open(f"json_logs/experiment{exp_num}/{full_model_name}.json", "w") as json_file:
+json_path = f"json_logs/experiment{exp_num}/{full_model_name}.json"
+
+with open(json_path, "w") as json_file:
     json.dump(data, fp=json_file, indent=4)
+
+print(f"Saving info to {json_path}")
