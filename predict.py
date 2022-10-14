@@ -91,22 +91,25 @@ def load_and_predict(model_name, test_set_name, exp_num):
 # Setting up the parser
 parser = argparse.ArgumentParser(description="Predict")
 
-parser.add_argument("-m", "--model", type=str, metavar="", help="Name of the model (e.g. average_1)")
+# parser.add_argument("-m", "--model", type=str, metavar="", help="Name of the model (e.g. average_1)")
 parser.add_argument("-e", "--experiment", type=str, metavar="", help="Experiment number to access the correct folder")
 
 args = parser.parse_args()
 
 if __name__ == "__main__":
-    model_name = args.model
-    exp_num = args.experiment
 
-    model_num = model_name.split("_")[1]
-    nums = ["1", "2", "3"]
+    models = ["AC_1", "AC_2", "AC_3", "BC_1", "BC_2", "BC_3", "WC_1", "WC_2", "WC_3"]
 
-    test_files = [f"AC_{x}" for x in nums if x != model_num]
+    for model_name in models:
+        exp_num = args.experiment
 
-    load_and_predict(model_name, "external", exp_num)
-    load_and_predict(model_name, test_files[0], exp_num)
-    load_and_predict(model_name, test_files[1], exp_num)
+        model_num = model_name.split("_")[1]
+        first_letter = model_name[0]
+        nums = ["1", "2", "3"]
 
-    # load_and_predict(model_name, internal_set_name(model_name), exp_num)
+        test_files = [f"{first_letter}C_{x}" for x in nums if x != model_num]
+        print(test_files)
+
+        load_and_predict(model_name, "external", exp_num)
+        load_and_predict(model_name, test_files[0], exp_num)
+        load_and_predict(model_name, test_files[1], exp_num)
