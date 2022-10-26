@@ -4,6 +4,7 @@ import cv2
 import os
 import re
 import argparse
+import tensorflow as tf
 
 from keras.models import load_model
 from FCN_metrics import dice_coef, dice_coef_loss
@@ -97,12 +98,20 @@ parser.add_argument("-e", "--experiment", type=str, metavar="", help="Experiment
 args = parser.parse_args()
 
 if __name__ == "__main__":
+    # config = ConfigProto()
+    # config.gpu_options.allow_growth = True
+    # session = InteractiveSession(config=config)
+
+    # Handle memory issues 
+    gpu_options = tf.compat.v1.GPUOptions(allow_growth=True)
+    session = tf.compat.v1.InteractiveSession(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
+
+    # Run predictions
+    exp_num = args.experiment
 
     models = ["AC_1", "AC_2", "AC_3", "BC_1", "BC_2", "BC_3", "WC_1", "WC_2", "WC_3"]
 
     for model_name in models:
-        exp_num = args.experiment
-
         model_num = model_name.split("_")[1]
         first_letter = model_name[0]
         nums = ["1", "2", "3"]
