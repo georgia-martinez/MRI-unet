@@ -16,15 +16,8 @@ def get_paths(model_name, test_file, exp_num):
 
     model_path = f"{PATH}/models/{model_name}.h5"
     test_path = f"{PATH}/hdf5_files/{test_file}.h5"
-    out_path = f"{PATH}/predictions/{model_name}/"
 
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
-        print(f"Creating new directory: {out_path}")
-
-    out_path += f"{test_file}_predictions.h5"
-
-    return model_path, test_path, out_path
+    return model_path, test_path
 
 def internal_set_name(model_name):
     """
@@ -45,7 +38,7 @@ def internal_set_name(model_name):
 
     return internal_set
 
-def load_and_predict(model_name, test_set_name, exp_num):
+def load_and_predict(model_name, test_set_name, exp_num, out_path):
     """
     Load FCN model and predicts on a dataset. Predictions are saved to an HDF5 file.
     
@@ -54,7 +47,7 @@ def load_and_predict(model_name, test_set_name, exp_num):
     @param out_path: string - HDf5 file to which predictions will be saved    
     """
 
-    model_path, test_path, out_path = get_paths(model_name, test_set_name, exp_num)
+    model_path, test_path = get_paths(model_name, test_set_name, exp_num)
 
     loaded_model = load_model(model_path, custom_objects={"dice_coef": dice_coef,"dice_coef_loss": dice_coef_loss})
 
@@ -109,16 +102,17 @@ if __name__ == "__main__":
     # Run predictions
     exp_num = args.experiment
 
-    models = ["AC_1", "AC_2", "AC_3", "BC_1", "BC_2", "BC_3", "WC_1", "WC_2", "WC_3"]
+    model_name = "BC_1"
+    test_set = "external"
+    pred_file_name = f"{test_set}v2_predictions.h5"
 
-    for model_name in models:
-        model_num = model_name.split("_")[1]
-        first_letter = model_name[0]
-        nums = ["1", "2", "3"]
+    # Make path to save predictions
+    out_path = f"/data/gcm49/experiment{exp_num}/predictions/{model_name}/" # path to save the model
 
-        test_files = [f"{first_letter}C_{x}" for x in nums if x != model_num]
-        print(test_files)
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+        print(f"Creating new directory: {out_path}")
 
-        load_and_predict(model_name, "external", exp_num)
-        load_and_predict(model_name, test_files[0], exp_num)
-        load_and_predict(model_name, test_files[1], exp_num)
+    out_path += pred_file_name
+
+    load_and_predict(model_name, test_set, exp_num, out_path)

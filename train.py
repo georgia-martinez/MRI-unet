@@ -1,3 +1,9 @@
+"""
+Script for training the models
+
+python3 train.py -m AC_1 -e 9
+"""
+
 import numpy as np
 import tensorflow as tf
 import h5py
