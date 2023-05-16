@@ -2,6 +2,7 @@
 Script for training the models
 
 python3 train.py -m AC_1 -e 9
+nvidia-htop.py -l
 """
 
 import numpy as np
