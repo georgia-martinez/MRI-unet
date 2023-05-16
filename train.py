@@ -1,18 +1,13 @@
-"""
-Script for training the models
-
-python3 train.py -m AC_1 -e 9
-nvidia-htop.py -l
-"""
-
+import yaml
+import os
 import numpy as np
 import tensorflow as tf
 import h5py
+import json
+import matplotlib.pyplot as plt
+
 import FCN_metrics
 import unet
-import json
-import argparse
-import matplotlib.pyplot as plt
 
 from keras.layers import Input
 from keras.preprocessing.image import ImageDataGenerator
@@ -21,139 +16,161 @@ from tensorflow.keras.optimizers import Adam
 
 from validation_set import train_val_split
 
-# Setting up the parser
-parser = argparse.ArgumentParser(description="Train")
+def train_unet(
+        image_height, 
+        image_width, 
+        num_channels,
+        max_epochs,
+        batch_size, 
+        learning_rate, 
+        data_path, 
+        model_out_path, 
+        json_path=None):
 
-parser.add_argument("-m", "--model", type=str, metavar="", help="Name of the model (e.g. average_1)")
-parser.add_argument("-v", "--version", type=str, metavar="", nargs="?", default="", help="Version number of model (e.g. v2 or v2)")
-parser.add_argument("-e", "--experiment", type=str, metavar="", help="Experiment number to access the correct folder")
-# parser.add_argument("-f", "--hdf5", type=str, metavar="", help="Experiment number to access the hdf5 files")
+    # Build the network
+    input_img = Input((image_width, image_height, num_channels), name="img")
 
-args = parser.parse_args()
+    config = tf.compat.v1.ConfigProto()
+    config.gpu_options.allow_growth = True
+    session = tf.compat.v1.Session(config=config)
 
-model_name = args.model
-model_version = args.version
-exp_num = args.experiment
-# hdf5_num = args.hdf5
+    optimizer = Adam(learning_rate=learning_rate)
 
-# Important hyperparameters
-image_height = 128
-image_width = 128
-num_channels = 1
-epochs = 50
-batch_size = 16
-learning_rate = 3e-3
+    model = unet.get_unet(input_img, num_channels)
+    model.compile(optimizer=optimizer, loss=FCN_metrics.dice_coef_loss, metrics=[FCN_metrics.dice_coef])
 
-full_model_name = model_name + model_version # (e.g. average_1 or average_1v4)
+    print("Built the network \n")
 
-model_out_path = f"/data/gcm49/experiment{exp_num}/models/{full_model_name}.h5" 
-HDF5Path_train = f"/data/gcm49/experiment{exp_num}/hdf5_files/{model_name}.h5"
+    # Set callbacks
+    json_logs = []
 
-# Build the network
-input_img = Input((image_width, image_height, num_channels), name="img")
+    json_logging_callback = LambdaCallback(
+        on_epoch_end=lambda epoch, 
+        logs: json_logs.append({"epoch": epoch, "loss": logs["loss"], "val loss": logs["val_loss"]}),
+    )
+            
+    early_stop = EarlyStopping(monitor="loss", patience=4, mode="auto", min_delta=0.01, baseline=None)
 
-config = tf.compat.v1.ConfigProto()
-config.gpu_options.allow_growth = True
-session = tf.compat.v1.Session(config=config)
+    callbacks = [early_stop, json_logging_callback]
 
-optimizer = Adam(learning_rate=learning_rate)
+    # Get the training and validation datasets
+    with h5py.File(data_path, "r") as f:
+        raw = f["raw"][()]
+        labels = f["labels"][()]
+        names = f["slice_names"][()]
+        names = [name.decode("utf-8") for name in names]
 
-model = unet.get_unet(input_img, num_channels)
-model.compile(optimizer=optimizer, loss=FCN_metrics.dice_coef_loss, metrics=[FCN_metrics.dice_coef])
+    print("Creating the training, validation split...")
+    X_train, y_train, X_val, y_val = train_val_split(raw, labels, names)
 
-print("Built the network \n")
+    print("Finished loading the training set and validation datasets\n")
 
-# Set callbacks
+    # Expanding dimensions from (D, H, W) to (D, H, W, C)
+    X_train = np.expand_dims(X_train, 3)
+    y_train = np.expand_dims(y_train, 3)
 
-json_logs = []
+    X_val = np.expand_dims(X_val, 3)
+    y_val = np.expand_dims(y_val, 3)
 
-json_logging_callback = LambdaCallback(
-    on_epoch_end=lambda epoch, 
-    logs: json_logs.append({"epoch": epoch, "loss": logs["loss"], "val loss": logs["val_loss"]}),
-)
-        
-early_stop = EarlyStopping(monitor="loss", patience=4, mode="auto", min_delta=0.01, baseline=None)
+    assert X_train.shape == y_train.shape
+    assert X_val.shape == y_val.shape
 
-callbacks = [early_stop, json_logging_callback]
+    print(f"Training data shape: {X_train.shape}")
+    print(f"Validation data shape: {X_val.shape}\n")
 
-# Get the training and validation datasets
-with h5py.File(HDF5Path_train, "r") as f:
-    raw = f["raw"][()]
-    labels = f["labels"][()]
-    names = f["slice_names"][()]
-    names = [name.decode("utf-8") for name in names]
+    # On the fly image augmentations
 
-print("Creating the training, validation split...")
-X_train, y_train, X_val, y_val = train_val_split(raw, labels, names)
+    data_gen_args = dict(rotation_range=30, vertical_flip=True)
 
-print("Finished loading the training set and validation datasets\n")
+    image_datagen = ImageDataGenerator(**data_gen_args)
+    mask_datagen = ImageDataGenerator(**data_gen_args)
 
-# Expanding dimensions from (D, H, W) to (D, H, W, C)
-X_train = np.expand_dims(X_train, 3)
-y_train = np.expand_dims(y_train, 3)
+    image_generater = image_datagen.flow(X_train, batch_size=batch_size, seed=7)
+    mask_generator = mask_datagen.flow(y_train, batch_size=batch_size, seed=7)
 
-X_val = np.expand_dims(X_val, 3)
-y_val = np.expand_dims(y_val, 3)
+    train_generator = zip(image_generater, mask_generator)
+    print("Passed zipping!\n")
 
-assert X_train.shape == y_train.shape
-assert X_val.shape == y_val.shape
+    # Save some sample augmentations
+    for X_batch, y_batch in train_generator:
+        # plot 9 images
+        for i in range(0,15):
+            plt.subplot(5, 5, 1 + i)
+            plt.grid(False)
+            aug_img = X_batch[i]
+            aug_mask = y_batch[i]
+            plt.imshow(aug_img.squeeze(), cmap="gray", interpolation="bilinear")
+            plt.contour(aug_mask.squeeze(), colors="y", levels=[0.5])
+        # save the plot
+        plt.savefig("sample_augmentations", bbox_inches="tight")
+        break
 
-print(f"Training data shape: {X_train.shape}")
-print(f"Validation data shape: {X_val.shape}\n")
+    # Run U-Net
+    print("Running the U-Net")
 
-# On the fly image augmentations
+    model.fit(train_generator, steps_per_epoch = len(X_train)//batch_size, validation_data=(X_val, y_val), epochs=max_epochs, callbacks=callbacks)
 
-data_gen_args = dict(rotation_range=30,
-                     vertical_flip=True)
+    # Save the model
+    file_name = data_path.split("/")[-1].split(".")[0]
 
-image_datagen = ImageDataGenerator(**data_gen_args)
-mask_datagen = ImageDataGenerator(**data_gen_args)
+    model_out_path = os.path.join(model_out_path, file_name + ".h5")
 
-image_generater = image_datagen.flow(X_train, batch_size=batch_size, seed=7)
-mask_generator = mask_datagen.flow(y_train, batch_size=batch_size, seed=7)
+    print(f"Saving the model to: {model_out_path}")
+    model.save(model_out_path)
 
-train_generator = zip(image_generater, mask_generator)
-print("Passed zipping!\n")
+    if json_path is None:
+        return
 
-# Save some sample augmentations
-for X_batch, y_batch in train_generator:
-    # plot 9 images
-    for i in range(0,15):
-        plt.subplot(5, 5, 1 + i)
-        plt.grid(False)
-        aug_img = X_batch[i]
-        aug_mask = y_batch[i]
-        plt.imshow(aug_img.squeeze(), cmap="gray", interpolation="bilinear")
-        plt.contour(aug_mask.squeeze(), colors="y", levels=[0.5])
-    # save the plot
-    plt.savefig("sample_augmentations", bbox_inches="tight")
-    break
+    # Save JSON file with training info
+    data = {}
+    data["name"] = file_name
+    data["path"] = model_out_path
+    data["train path"] = data_path
+    data["image height"] = image_height
+    data["image width"] = image_width
+    data["num channels"] = num_channels
+    data["max_epochs"] = max_epochs
+    data["batch size"] = batch_size
+    data["learning rate"] = learning_rate
+    data["logs"] = json_logs
 
-# Run U-Net
-print("Running the U-Net")
+    json_path = os.path.join(json_path, file_name + ".json")
 
-model.fit(train_generator, steps_per_epoch = len(X_train)//batch_size, validation_data=(X_val, y_val), epochs=epochs, callbacks=callbacks)
+    with open(json_path, "w") as json_file:
+        json.dump(data, fp=json_file, indent=4)
 
-print(f"Saving the model to: {model_out_path}")
-model.save(model_out_path)
+    print(f"Saving info to {json_path}")
 
-# Save JSON file with training info
-data = {}
-data["name"] = full_model_name
-data["path"] = model_out_path
-data["train path"] = HDF5Path_train
-# data["val path"] = HDF5Path_val
-data["image height"] = image_height
-data["image width"] = image_width
-data["num channels"] = num_channels
-data["epochs"] = epochs
-data["batch size"] = batch_size
-data["learning rate"] = learning_rate
-data["logs"] = json_logs
 
-json_path = f"json_logs/experiment{exp_num}/{full_model_name}.json"
+if __name__ == "__main__":
 
-with open(json_path, "w") as json_file:
-    json.dump(data, fp=json_file, indent=4)
+    with open("configs/train.yaml") as f:
+        config = yaml.safe_load(f)
 
-print(f"Saving info to {json_path}")
+    # Hyperparameters
+    image_height = config["image_height"]
+    image_width = config["image_width"]
+    num_channels = config["num_channels"]
+    max_epochs = config["max_epochs"]
+    batch_size = config["batch_size"]
+    learning_rate = float(config["learning_rate"])
+
+    # Model paths
+    data_path = config["data_path"]
+    model_out_path = config["model_out_path"]
+    json_log_path = config["json_log_path"]
+
+    model_paths = []
+
+    # Train only one model
+    if data_path[-3:] == ".h5": 
+        model_paths.append(data_path)
+
+    # Train all of the models in the folder
+    else:
+        for model_path in os.listdir(data_path):
+            full_path = os.path.join(data_path, model_path)
+            model_paths.append(full_path)
+
+    for path in model_paths:
+        train_unet(image_height, image_width, num_channels, max_epochs, batch_size, learning_rate, path, model_out_path, json_log_path)

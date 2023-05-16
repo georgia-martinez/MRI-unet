@@ -1,0 +1,14 @@
+# Paths
+
+data_path: "/data/gcm49/experiment11/hdf5_files/AC_1.h5"
+model_out_path: "/data/gcm49/experimentTEST/models/"
+json_log_path: "/json_logs/experimentTEST/"
+
+# Hyperparameters 
+
+image_height: 128
+image_width: 128
+num_channels: 1
+max_epochs: 50
+batch_size: 16
+learning_rate: 3e-3
