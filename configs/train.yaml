@@ -1,10 +1,10 @@
 # Paths
 
-data_path: "/data/gcm49/experiment11/hdf5_files/AC_1.h5"
+data_path: "/data/gcm49/experiment11/hdf5_files/"
 model_out_path: "/data/gcm49/experimentTEST/models/"
-json_log_path: "/json_logs/experimentTEST/"
+json_log_path: "json_logs/experimentTEST/"
 
-# Hyperparameters 
+# Hyperparameters
 
 image_height: 128
 image_width: 128

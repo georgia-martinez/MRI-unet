@@ -1,3 +1,4 @@
+import yaml
 import numpy as np
 import h5py
 import cv2
@@ -95,20 +96,38 @@ if __name__ == "__main__":
     gpu_options = tf.compat.v1.GPUOptions(allow_growth=True)
     session = tf.compat.v1.InteractiveSession(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
 
-    # Run predictions
-    exp_num = args.experiment
+    with open("configs/predict.yaml") as f:
+            config = yaml.safe_load(f)
 
-    model_name = "BC_1"
-    test_set = "external"
-    pred_file_name = f"{test_set}v2_predictions.h5"
+    model_path = config["model_path"]
+    predict_out_path = config["predict_out_path"]
 
-    # Make path to save predictions
-    out_path = f"/data/gcm49/experiment{exp_num}/predictions/{model_name}/" # path to save the model
+    model_paths = []
 
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
-        print(f"Creating new directory: {out_path}")
+    # Predict only one model
+    if model_path[-3:] == ".h5": 
+        model_paths.append(model_path)
 
-    out_path += pred_file_name
+    # Predict all models
+    else:
+        for path in os.listdir(model_path):
+            full_path = os.path.join(model_path, path)
+            model_paths.append(full_path)
 
-    load_and_predict(model_name, test_set, exp_num, out_path)
+    for path in model_paths:
+        pass
+
+    # model_name = "BC_1"
+    # test_set = "external"
+    # pred_file_name = f"{test_set}v2_predictions.h5"
+
+    # # Make path to save predictions
+    # out_path = f"/data/gcm49/experiment{exp_num}/predictions/{model_name}/" # path to save the model
+
+    # if not os.path.exists(out_path):
+    #     os.makedirs(out_path)
+    #     print(f"Creating new directory: {out_path}")
+
+    # out_path += pred_file_name
+
+    # load_and_predict(model_name, test_set, exp_num, out_path)
