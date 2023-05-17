@@ -2,7 +2,3 @@
 
 model_path: "/data/gcm49/experiment11/models/"
 predict_out_path: "/data/gcm49/experimentTEST/predictions/"
-
-test_path1: "/data/gcm49/experiment11/models/"
-test_path2: ""
-external_path: ""
