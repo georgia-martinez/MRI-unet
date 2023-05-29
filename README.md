@@ -26,6 +26,7 @@ Below are descriptions of the different YAML parameters:
 
 For potential `data_path` debugging: here is an example file structure with file names that work with the code:
 
+```
 MRQy_Data/
 ├─ CCF_Pre_Resampled/
 │  ├─ RectalCA_001
@@ -37,7 +38,7 @@ MRQy_Data/
 │  ├─ RectalCA_001 ...
 │  ├─ RectalCA_002 ...
 │  ├─ RectalCA_003 ...
-
+```
 
 ### Training the models
 
@@ -58,3 +59,5 @@ Below are descriptions of the different YAML parameters:
 - `model_path`: path to the trained model(s) stored in an hdf5 file. Can point towards a specific hdf5 file or a folder full of models.
 - `test_file_path`: path to the hdf5 files to test on. Can point towards a specific hdf5 file or a folder containing test files. If a folder path is provided, the code will perform three fold cross validation based on file names.
 - `predict_out_path`: path to a folder to store the predictions as hdf5 files.
+
+### Analyzing results
