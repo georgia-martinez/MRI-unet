@@ -232,7 +232,7 @@ if __name__ == "__main__":
             full_path = os.path.join(csv_path, file_path)
             csv_paths.append(full_path)
 
-    # Create the HDF5 files
+    # Create the hdf5 files
     for path in csv_paths:
 
         # External set

@@ -1,2 +1,3 @@
 model_path: "/data/gcm49/experiment11/models/"
+test_file_path: "/data/gcm49/experiment11/hdf5_files/"
 predict_out_path: "/data/gcm49/experimentTEST/predictions/"
