@@ -113,11 +113,13 @@ def MRI_volume(path):
 
     return slices
 
-def patient_data(image_paths, label_paths):
+def patient_data(image_paths, label_paths, img_size):
     """
     Gets the image volume from each path and returns the list of slices as numpy arrays and the corresponding slice names
  
-    @param paths: list of image paths
+    @param image_paths: list of image paths
+    @param label_paths: list of label paths
+    @param img_size: images will be cropped to img_size x img_size
     @return: 
         list of images as numpy arrays
         list of image names
@@ -127,7 +129,7 @@ def patient_data(image_paths, label_paths):
     labels = []
     slice_names = []
 
-    N = 128 # Cropped images will be N x N
+    N = img_size # Cropped images will be N x N
     count = 1
 
     assert len(image_paths) == len(label_paths), "image_paths is a different size than label_paths"
@@ -147,7 +149,6 @@ def patient_data(image_paths, label_paths):
         patient_labels = []
         patient_slice_names = []
 
-        # TODO: This can probs just be image_slice, label_slice in zip(image_slices, label_slices)
         for i, (image_slice, label_slice) in enumerate(zip(image_slices, label_slices)):
 
             curr_label = np.where(label_slice != 1, 0, label_slice) # grabbing only label 1 (tumor)   
@@ -177,7 +178,7 @@ def patient_data(image_paths, label_paths):
 
     return images, labels, slice_names
 
-def create_hdf5(patients, file_name, src_path, dst_path):
+def create_hdf5(patients, file_name, src_path, dst_path, img_size=128):
     """
     Creates an hdf5 file which stores images, labels, image names, and label names
 
@@ -187,15 +188,12 @@ def create_hdf5(patients, file_name, src_path, dst_path):
     @param dst_path: path to store the hdf5 file
     """
 
-    # if file_name is None:
-    #     file_name = col
-
     print(f"Starting {file_name}")
     
     image_paths, label_paths = all_data_paths(src_path)
     patient_img_paths, patient_label_paths = patient_paths(patients, image_paths, label_paths)
 
-    image_data, label_data, slice_names = patient_data(patient_img_paths, patient_label_paths)
+    image_data, label_data, slice_names = patient_data(patient_img_paths, patient_label_paths, img_size)
 
     hdf5_path = dst_path + file_name + ".h5"
     hd5f_file = h5py.File(hdf5_path, "w")
@@ -219,6 +217,8 @@ if __name__ == "__main__":
     data_path = config["data_path"]
     output_path = config["output_path"]
     csv_path = config["csv_path"]
+
+    img_size = config["img_size"]
 
     csv_paths = []
 
@@ -252,4 +252,4 @@ if __name__ == "__main__":
             for col_name in columns:
                 patients = patients_from_csv(path, col_name)
 
-                create_hdf5(patients, col_name, data_path, output_path)
+                create_hdf5(patients, col_name, data_path, output_path, img_size)
