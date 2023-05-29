@@ -1,4 +1,2 @@
-# Paths
-
 model_path: "/data/gcm49/experiment11/models/"
 predict_out_path: "/data/gcm49/experimentTEST/predictions/"

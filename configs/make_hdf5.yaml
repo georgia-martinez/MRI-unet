@@ -1,0 +1,3 @@
+data_path: "/data/gcm49/MRQy_Data/"
+output_path: "/data/gcm49/experimentTEST/hdf5_files/"
+csv_path: "example_data"
