@@ -61,3 +61,10 @@ Below are descriptions of the different YAML parameters:
 - `predict_out_path`: path to a folder to store the predictions as hdf5 files.
 
 ### Analyzing results
+
+Once predictions have been run, you can have metrics computed to evaluate the model performance. The metrics computed for this project were precision, accuracy, recall, IoU, and F1. To use it, set up the `configs/metrics_2D.yaml` file. Then, run `analyze_results/metrics_2D.py`. (Note that this script needs all the predictions to be generated from the previous step to run). This file will also generate a CSV containing overall metrics by case and by model
+
+Below are descriptions of the different YAML parameters:
+- `gt_folder_path`: path to the folder containing the ground truth h5 files.
+- `pred_folder_path`: path to the folder containing the prediction h5 files (`predict_out_path` from the previous step).
+- `metrics_output_path`: path to a folder where the metrics will be stored as CSV.
