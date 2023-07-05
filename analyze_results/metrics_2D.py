@@ -86,14 +86,15 @@ if __name__ == "__main__":
     #         model_paths.append(full_path)
 
     for model in model_paths:
-        model_num = model[-1]
-        first_letter = model[0]
-        
+
+        model_name = model.split("/")[-1]
+        first_letter = model_name[0]
+        model_num = model_name[-1]
+
         nums = ["1", "2", "3"]
         test_files = [f"{first_letter}C{x}" for x in nums if x != model_num]
 
         print(f"Generating 2D metrics for the {model} model...")
-        print(test_files)
 
         # Test on the external set
         gt_path = os.path.join(gt_folder_path, "external.h5")
@@ -101,8 +102,10 @@ if __name__ == "__main__":
 
         gt_masks, pred_masks, names = get_h5data(gt_path, pred_path)
 
-        letter, version = model.split("_") #TODO: I don't think it's split by _ anymore
-        csv_name = f"{letter[0].upper()}C{version}_external.csv" # e.g. AC1_testedOn_AC2.csv
+        # letter, version = model.split("_") #TODO: I don't think it's split by _ anymore
+        # csv_name = f"{letter[0].upper()}C{version}_external.csv"
+
+        csv_name = f"{model_name}_external.csv"
         csv_path = os.path.join(metrics_out_path, csv_name)
 
         generate_metrics(gt_masks, pred_masks, names, csv_path)
@@ -115,7 +118,7 @@ if __name__ == "__main__":
 
             gt_masks, pred_masks, names = get_h5data(gt_path, pred_path)
 
-            csv_name = f"{letter[0].upper()}C{version}_testedOn_{test}.csv" # e.g. AC1_testedOn_AC2.csv
+            csv_name = f"{model_name}_testedOn_{test}.csv" # e.g. AC1_testedOn_AC2.csv
             csv_path = os.path.join(metrics_out_path, csv_name)
 
             generate_metrics(gt_masks, pred_masks, names, csv_path)
